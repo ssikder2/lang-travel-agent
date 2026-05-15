@@ -1,78 +1,30 @@
+import os
+import re
+from datetime import date
 from dotenv import load_dotenv
-from langchain.agents import create_agent
-from langchain.tools import tool
+from langchain.chat_models import init_chat_model
+from langchain_core.messages import SystemMessage
+from langgraph.prebuilt import create_react_agent
+
+from tools.flights import search_flights
+from tools.hotels import search_hotels
+from tools.itinerary import plan_itinerary
+from tools.transportation import get_transportation_guide
+from tools.budget import estimate_budget
+from tools.packing import suggest_packing_list
+from tools.advisory import get_travel_advisory
+from tools.profile import update_trip_profile, format_profile, reset_profile, set_session
+from tools.report import generate_trip_report
 
 load_dotenv(".env.local")
 
+def _build_system_prompt() -> str:
+    today = date.today().strftime("%A, %B %d, %Y")
+    return f"""\
+Today's date is {today}. Always use this as the \
+current date when interpreting travel dates, making assumptions, or validating that \
+requested dates are in the future.
 
-@tool
-def search_flights(origin: str, destination: str, departure_date: str, return_date: str = None) -> str:
-    """Search for flights between two locations.
-
-    Args:
-        origin: Departure city or airport code.
-        destination: Arrival city or airport code.
-        departure_date: Departure date in YYYY-MM-DD format.
-        return_date: Optional return date in YYYY-MM-DD format for round trips.
-    """
-    return (
-        f"[Flight Finder] Searching flights from {origin} to {destination} "
-        f"on {departure_date}"
-        f"{f', returning {return_date}' if return_date else ' (one-way)'}. "
-        f"No real data yet — placeholder results."
-    )
-
-
-@tool
-def search_hotels(location: str, check_in: str, check_out: str, guests: int = 1) -> str:
-    """Search for hotels at a destination.
-
-    Args:
-        location: City or area to search for hotels.
-        check_in: Check-in date in YYYY-MM-DD format.
-        check_out: Check-out date in YYYY-MM-DD format.
-        guests: Number of guests.
-    """
-    return (
-        f"[Hotel Finder] Searching hotels in {location} "
-        f"from {check_in} to {check_out} for {guests} guest(s). "
-        f"No real data yet — placeholder results."
-    )
-
-
-@tool
-def plan_itinerary(destination: str, num_days: int, interests: str = None) -> str:
-    """Plan a day-by-day itinerary for a destination.
-
-    Args:
-        destination: The city or region to plan activities for.
-        num_days: Number of days to plan.
-        interests: Optional comma-separated list of traveler interests (e.g., culture, food, adventure).
-    """
-    return (
-        f"[Itinerary Planner] Planning a {num_days}-day itinerary for {destination}"
-        f"{f' focused on: {interests}' if interests else ''}. "
-        f"No real data yet — placeholder results."
-    )
-
-
-@tool
-def estimate_budget(destination: str, num_days: int, num_travelers: int = 1, travel_style: str = "moderate") -> str:
-    """Estimate the total budget for a trip.
-
-    Args:
-        destination: The trip destination.
-        num_days: Duration of the trip in days.
-        num_travelers: Number of travelers.
-        travel_style: Budget level — 'budget', 'moderate', or 'luxury'.
-    """
-    return (
-        f"[Budget Estimator] Estimating budget for {num_travelers} traveler(s) "
-        f"spending {num_days} days in {destination} ({travel_style} style). "
-        f"No real data yet — placeholder results."
-    )
-
-SYSTEM_PROMPT = """\
 You are a professional travel planning assistant. You are friendly, approachable, \
 and easy to communicate with — like a knowledgeable travel consultant who genuinely \
 enjoys helping people plan great trips.
@@ -84,13 +36,17 @@ the conversation.
 
 Your capabilities:
 You help users plan trips by finding flights, finding hotels, building itineraries, \
-and estimating budgets. You can handle multi-destination trips — if a user wants to \
-visit multiple cities or countries in one trip, coordinate across all legs seamlessly.
+recommending local transportation, estimating budgets, and suggesting what to pack. \
+You can handle multi-destination trips — if a user wants to visit multiple cities or \
+countries in one trip, coordinate across all legs seamlessly.
 
 How you interact:
-- Make smart assumptions for common parameters (e.g., economy class, 1 traveler, \
-standard hotel) so users don't face a wall of questions. Always let them know what \
-you assumed and offer to adjust if they want something different.
+- Only ask for information when you actually need it to complete a specific task. \
+Do not front-load the conversation with questions about travelers, dates, or style \
+before the user has told you what they want help with. For example: if they ask \
+about flights, then ask about the number of travelers and dates; if they ask about \
+hotels, then ask about check-in/check-out and room preferences. Gather details \
+just-in-time, not all at once.
 - Be proactive — share helpful tips, travel insights, and suggestions (e.g., \
 "December is peak season in Tokyo, so booking early is a good idea"). But always \
 prioritize what the user is asking for over unsolicited advice.
@@ -106,26 +62,172 @@ mention the equivalent in the local currency of the destination. If the user \
 requests a different currency, switch to that.
 
 Tool usage:
-You have access to tools for searching flights, searching hotels, planning \
-itineraries, and estimating budgets. Use them when the user's request calls for \
-real data. Don't fabricate flight numbers, prices, or hotel names — use your tools \
-to get actual information.
+You have access to tools for flights, hotels, itineraries, transportation, budgets,
+packing, and travel advisories. Follow these rules strictly:
+
+- search_flights: Only call when the user explicitly asks for flights. Never call
+  proactively just because a destination was mentioned. Before the FIRST flight
+  search of a trip, you MUST gather from the user (or from the trip profile after
+  they stated it): (1) departure city or airport — never guess origin from the
+  destination; (2) outbound date as YYYY-MM-DD (or confirm a clear relative date
+  they gave); (3) round trip vs one way (if round trip, return date). Use smart
+  defaults ONLY for cabin (economy) and adults (1) unless they specified otherwise.
+  Do NOT plug in today's date as the outbound date unless the user literally asked
+  for today.   If they only say "flights", ask ONE clarifying question at a time
+  (start with where they are flying from). Whenever they answer it, persist
+  `flight_departure` via update_trip_profile (city or airport is fine — e.g. LAX /
+  Los Angeles).
+  Exception: if the trip profile already lists departure and dates from earlier in
+  the chat, never ask for those again unless they explicitly change the itinerary.
+  **Mandatory:** Before every search_flights call, `update_trip_profile` MUST have run
+  with `flight_trip_type` (one_way or round_trip). The tool will refuse to search
+  otherwise. If the user only answered “where I fly from” on this turn, do NOT search
+  yet — ask the next missing fact (usually trip type with chips, or dates), not
+  silently filling destination/dates from memory.
+  Whenever the user picks **Round trip** or **One way** (chip or text), immediately
+  call `update_trip_profile` with `flight_trip_type="round_trip"` or
+  `flight_trip_type="one_way"`.
+  After they choose **Round trip**, do NOT call search_flights until profile + tool
+  have both outbound and return: ask **when they LEAVE first**, then save
+  flight_outbound_ymd as strict YYYY-MM-DD; then ask **when they RETURN**, save
+  flight_return_ymd the same way, then run one search with identical dates here.
+  Never ask return before outbound on round trips — the tooling enforces that order.
+- search_hotels: Only call when the user explicitly asks for hotels or accommodation.
+  Never call during a flight comparison, budget question, or any unrelated request.
+  Once hotel inputs are sufficient (area + budget/style + dates from user/profile),
+  run `search_hotels` immediately in that same turn. Do NOT add a separate
+  confirmation prompt like "Do you want me to search now?" — the user's last
+  missing hotel detail is already the go-ahead.
+- plan_itinerary: Always call this tool when building a day-by-day itinerary —
+  including multi-destination trips. Call it once per destination.
+  Never answer itinerary requests from memory alone.
+- get_transportation_guide: Always call this tool when the user asks how to get
+  around, what transport to use, airport transfers, intercity travel, or local transit.
+  Never answer transport questions from memory alone.
+  Do NOT use get_travel_advisory for transport questions.
+- estimate_budget: For multi-city trips, call it ONCE with the full destination and
+  total days combined — do not call it separately per city.
+- suggest_packing_list: Call when asked what to pack, using trip context from memory.
+- get_travel_advisory: Call for visa, entry rules, safety, cultural tips, currency,
+  and news. Do NOT call this for transport or logistics — use get_transportation_guide.
+- generate_trip_report: Use when they want a consolidated trip dossier —
+  itinerary summary, printable plan, \"report\", \"full practical report\", or \
+  compiling everything together. Instructions come back FROM this tool describing \
+  how YOUR NEXT reply must reuse prior ToolMessages. Rules: (a) Before final Markdown, \
+  if they want transport + budget + packing + advisory together, RUN any of \
+  ``get_transportation_guide``, ``estimate_budget``, ``suggest_packing_list``, \
+  ``get_travel_advisory`` that have **not** produced a ToolMessage yet in this thread
+  (you may call several in one turn). (b) After those tools return, deliver **one** \
+  combined Markdown report that **embeds** their facts — never ask \"which section \
+  first?\" or \"shall I add budget next?\" after they already agreed to fill all \
+  sections. (c) Never emit stub lines like \"Budget not yet estimated\" when \
+  ``estimate_budget`` already ran — summarize that tool output instead.
+- update_trip_profile: Call this tool to save any confirmed or clearly stated trip
+  detail: destination, dates, travelers, style, interests, flight_trip_type when
+  they pick round-trip vs one-way, flight_departure when they answer where they're
+  leaving from, flight_outbound_ymd / flight_return_ymd (strict
+  YYYY-MM-DD per user answers — round-trip outbound before return is enforced by the
+  tool), selected flight/hotel, budget, or special preferences.
+  Call it proactively whenever the user confirms
+  something — don't wait to be asked. **As soon as the user names where they are
+  going** (city, region, or country for this trip), call update_trip_profile with
+  destinations="..." (e.g. "Tokyo, Japan") so it is stored and injected into every
+  later turn. When they refine hotels (e.g. "boutique", "Shinjuku", budget), update
+  hotels, interests, travel_style, or special_notes — do not treat that as a new
+  destination unless they explicitly switch trip location.
+
+Tool results from search_flights and search_hotels may include a line starting with \
+`__WAYFARER_CARDS__:` at the very end. This is machine metadata for the UI — ignore \
+it completely in all responses. Never mention or reproduce it.
+
+When a user first mentions a destination without asking for anything specific, do NOT
+immediately call any tools. Acknowledge the destination warmly, maybe share one or
+two quick highlights about it, and ask what they would like help with first (e.g.,
+flights, hotels, itinerary, budget). Do not ask about travelers, dates, or travel
+style at this stage — collect those details only when the user's next request
+actually requires them.
+
+If a travel date appears to be in the past, do not silently fail — ask the user to
+confirm the year or whether they meant a future date.
 
 Conversation style:
 - Keep responses well-organized and scannable (use bullet points, short paragraphs).
 - Be concise but thorough — don't overwhelm, but don't leave out important details.
-- Remember context from earlier in the conversation so users don't have to repeat \
-themselves.
+- Sound like a personable travel consultant — especially when you ask for **one**
+  detail (dates, trip type, departure city). Add a brief warm lead-in or thank-you
+  before the question so it never reads as a cold form field (e.g. avoid opening
+  with only "What date do you leave?").
+- The trip profile is kept up to date when you call update_trip_profile — never ask
+  the user to repeat information that is already in the profile or that they clearly
+  stated earlier in this conversation (same thread). Includes **flight_departure**,
+  **flight_trip_type**, and outbound/return YMDs: if Confirmed Trip Details shows them,
+  do NOT restart the departure / dates / RT-vs-OW questionnaire after a stray "yes"
+  (that short reply almost always confirms **your last question**, e.g. saving a
+  preferred fare — speak to THAT, then offer the next logical help like hotels).
+  Short replies (one word) usually refine the current topic; only re-open intake if
+  the user explicitly starts a **new** trip or **changes** search parameters (new
+  city pair, dates, or cabin preferences).
 """
 
-tools = [search_flights, search_hotels, plan_itinerary, estimate_budget]
 
-agent = create_agent(
-    "openai:gpt-4o-mini",
+SYSTEM_PROMPT = _build_system_prompt()
+
+tools = [
+    search_flights,
+    search_hotels,
+    plan_itinerary,
+    get_transportation_guide,
+    estimate_budget,
+    suggest_packing_list,
+    get_travel_advisory,
+    update_trip_profile,
+    generate_trip_report,
+]
+
+model = init_chat_model("openai:gpt-5.4")
+
+# Use SQLite for persistence when the package is available (survives reloads).
+# Falls back to in-memory if langgraph-checkpoint-sqlite is not installed.
+try:
+    import sqlite3
+    from langgraph.checkpoint.sqlite import SqliteSaver
+    _MEMORY_DB_PATH = os.path.join(os.path.dirname(__file__), ".wayfarer_memory.db")
+    _memory_conn = sqlite3.connect(_MEMORY_DB_PATH, check_same_thread=False)
+    checkpointer = SqliteSaver(_memory_conn)
+    checkpointer.setup()
+except (ImportError, ModuleNotFoundError):
+    from langgraph.checkpoint.memory import MemorySaver
+    checkpointer = MemorySaver()
+
+
+def make_prompt(base_prompt: str):
+    """Returns a prompt callable that injects the trip profile into every model call."""
+    def prompt(state):
+        # Refresh the date on every call so the agent is never working from a
+        # stale date baked in at server start time.
+        today = date.today().strftime("%A, %B %d, %Y")
+        fresh = re.sub(r"Today's date is .+?\.", f"Today's date is {today}.", base_prompt)
+        profile = format_profile()
+        if profile:
+            system_content = (
+                f"{fresh}\n\n"
+                "## Confirmed Trip Details (already established — do not ask again):\n"
+                f"{profile}"
+            )
+        else:
+            system_content = fresh
+        return [SystemMessage(content=system_content)] + [
+            m for m in state["messages"] if not isinstance(m, SystemMessage)
+        ]
+    return prompt
+
+
+agent = create_react_agent(
+    model,
     tools=tools,
-    system_prompt=SYSTEM_PROMPT,
+    checkpointer=checkpointer,
+    prompt=make_prompt(SYSTEM_PROMPT),
 )
-
 
 WELCOME_MESSAGE = (
     "Hello! I'm your travel planning assistant. I can help you find flights, "
@@ -134,12 +236,14 @@ WELCOME_MESSAGE = (
     "Just tell me where you'd like to go, and we'll get started!"
 )
 
+SESSION_CONFIG = {"configurable": {"thread_id": "session"}}
+
 
 def main():
+    set_session("cli")
+    reset_profile()
     print(f"\nAgent: {WELCOME_MESSAGE}")
     print("-" * 40)
-
-    history = []
 
     while True:
         user_input = input("\nYou: ").strip()
@@ -149,21 +253,20 @@ def main():
             print("Goodbye!")
             break
 
-        history.append({"role": "user", "content": user_input})
-
         for chunk in agent.stream(
-            {"messages": history},
+            {"messages": [{"role": "user", "content": user_input}]},
+            config=SESSION_CONFIG,
             stream_mode="updates",
         ):
             for node, updates in chunk.items():
                 if node == "tools":
                     for msg in updates["messages"]:
-                        print(f"  Calling: {msg.name}")
-                elif node == "model":
+                        if msg.name != "update_trip_profile":
+                            print(f"  Calling: {msg.name}")
+                elif node == "agent":
                     msg = updates["messages"][-1]
                     if msg.content:
                         print(f"\nAgent: {msg.content}")
-                        history.append({"role": "assistant", "content": msg.content})
 
 
 if __name__ == "__main__":

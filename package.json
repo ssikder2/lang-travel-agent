@@ -1,0 +1,13 @@
+{
+  "name": "lang-travel-agent",
+  "private": true,
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "build": "npm --prefix ui run build",
+    "dev": "npm --prefix ui run dev",
+    "lint": "npm --prefix ui run lint",
+    "start": "npm --prefix ui run start"
+  }
+}

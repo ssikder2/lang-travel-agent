@@ -1,0 +1,616 @@
+{
+  "name": "Wayfarer Dashboard Design System",
+  "version": "1.0.0",
+  "purpose": "Comprehensive styling and implementation guide for AI agents building new features in the Vite React travel dashboard app.",
+  "source_of_truth": {
+    "app": "dashboard",
+    "framework": "Vite + React",
+    "styling": "Tailwind CSS v3",
+    "primary_files": [
+      "dashboard/src/App.jsx",
+      "dashboard/src/index.css",
+      "dashboard/tailwind.config.js"
+    ],
+    "usage": "When adding new UI, follow this file before inventing new visual patterns. Reuse existing primitives, spacing, colors, density, and card structures."
+  },
+  "high_level_design_guidelines": {
+    "creative_direction": "A bright, compact, soft modular travel planning workspace. The interface should feel polished, calm, tactile, and operational, with rounded white cards floating over a warm light-gray canvas.",
+    "visual_principles": [
+      "Use cards as the core building block for almost every feature.",
+      "Keep the UI compact and information-dense while preserving generous rounded corners and soft spacing.",
+      "Use indigo and violet for primary actions, active states, and brand accents.",
+      "Use semantic pastels for statuses: emerald for confirmed/active, amber for pending/warning, pink for overage/error, blue for open/informational.",
+      "Use subtle borders and low-opacity shadows instead of heavy outlines.",
+      "Keep typography small and crisp: most UI text should be 10px to 14px.",
+      "Use icon tiles, avatars, status chips, progress bars, and compact rows to make dense data scannable.",
+      "Interactions should be gentle: light hover fills, soft shadow lift, opacity reveal, and simple transitions."
+    ],
+    "avoid": [
+      "Do not introduce dark mode panels, saturated full-page backgrounds, or heavy black shadows.",
+      "Do not use sharp corners. Interactive controls should be rounded at least 8px, usually 12px.",
+      "Do not use oversized marketing-style typography in the dashboard.",
+      "Do not add unrelated primary color systems. Indigo remains the main action color.",
+      "Do not display dense travel data as raw tables unless a card/list pattern would not work."
+    ]
+  },
+  "tailwind_v3_configuration": {
+    "content": [
+      "./index.html",
+      "./src/**/*.{js,jsx}"
+    ],
+    "theme_extensions": {
+      "colors": {
+        "primary": {
+          "50": "#eef2ff",
+          "100": "#e0e7ff",
+          "200": "#c7d2fe",
+          "300": "#a5b4fc",
+          "400": "#818cf8",
+          "500": "#6366f1",
+          "600": "#4f46e5",
+          "700": "#4338ca"
+        },
+        "canvas": "#f3f3f2",
+        "surface": "#ffffff"
+      },
+      "borderRadius": {
+        "4xl": "2rem"
+      },
+      "boxShadow": {
+        "card": "0 8px 24px rgba(15,23,42,0.06)",
+        "card-hover": "0 12px 32px rgba(15,23,42,0.10)",
+        "float": "0 18px 48px rgba(15,23,42,0.14)",
+        "brand": "0 12px 30px rgba(79,70,229,0.24)"
+      },
+      "fontSize": {
+        "2xs": [
+          "0.625rem",
+          {
+            "lineHeight": "0.75rem"
+          }
+        ]
+      }
+    }
+  },
+  "global_css": {
+    "base": {
+      "html_body_root": "height: 100%; background-color: #f3f3f2;",
+      "body": "font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased;"
+    },
+    "custom_utilities": {
+      "glass": {
+        "background": "rgba(255,255,255,0.70)",
+        "backdrop_filter": "blur(16px)",
+        "border": "1px solid rgba(255,255,255,0.60)",
+        "usage": "Use for translucent floating panels or persistent command/input surfaces. The current dashboard mostly uses solid white cards, so use glass sparingly."
+      },
+      "scrollbar-thin": {
+        "track": "transparent",
+        "thumb": "rgba(0,0,0,0.10)",
+        "size": "4px",
+        "radius": "999px",
+        "usage": "Apply to scrollable dashboard content areas."
+      }
+    }
+  },
+  "design_tokens": {
+    "colors": {
+      "canvas": {
+        "name": "Warm dashboard canvas",
+        "hex": "#f3f3f2",
+        "tailwind": "bg-canvas"
+      },
+      "surface": {
+        "name": "Card and panel surface",
+        "hex": "#ffffff",
+        "tailwind": "bg-white"
+      },
+      "text": {
+        "primary": "text-stone-800",
+        "secondary": "text-stone-700",
+        "muted": "text-stone-500",
+        "subtle": "text-stone-400",
+        "inverse": "text-white",
+        "primary_action": "text-indigo-600",
+        "primary_action_hover": "hover:text-indigo-700"
+      },
+      "borders": {
+        "shell": "border-black/[0.05]",
+        "control": "border-black/[0.07]",
+        "row": "border-black/[0.04]",
+        "primary_soft": "border-indigo-100",
+        "primary_control": "border-indigo-200"
+      },
+      "brand": {
+        "gradient": "bg-gradient-to-br from-indigo-500 to-violet-600",
+        "solid": "bg-indigo-600",
+        "soft": "bg-indigo-50",
+        "text": "text-indigo-600",
+        "text_soft": "text-indigo-400",
+        "hover_soft": "hover:bg-indigo-100"
+      },
+      "semantic": {
+        "confirmed": {
+          "bg": "bg-emerald-100",
+          "text": "text-emerald-700",
+          "border": "border-emerald-200",
+          "timeline_border": "border-emerald-300",
+          "icon_text": "text-emerald-600"
+        },
+        "active": {
+          "bg": "bg-emerald-100",
+          "text": "text-emerald-700",
+          "border": "border-emerald-200"
+        },
+        "pending": {
+          "bg": "bg-amber-50",
+          "text": "text-amber-700",
+          "border": "border-amber-200",
+          "timeline_border": "border-amber-300",
+          "icon_text": "text-amber-600"
+        },
+        "open": {
+          "bg": "bg-blue-50",
+          "text": "text-blue-700",
+          "border": "border-blue-200"
+        },
+        "cancelled_or_error": {
+          "bg": "bg-pink-50",
+          "text": "text-pink-700",
+          "border": "border-pink-200"
+        },
+        "over_budget": {
+          "bar": "bg-pink-400",
+          "text": "text-pink-600"
+        }
+      },
+      "avatar_palette": {
+        "owner": "bg-violet-400",
+        "cyan": "bg-sky-400",
+        "pink": "bg-pink-400",
+        "amber": "bg-amber-400",
+        "emerald": "bg-emerald-400",
+        "indigo_default": "bg-indigo-200"
+      },
+      "progress_palette": {
+        "indigo": "bg-indigo-400",
+        "indigo_strong": "bg-indigo-500",
+        "violet": "bg-violet-400",
+        "sky": "bg-sky-400",
+        "amber": "bg-amber-400",
+        "pink": "bg-pink-400"
+      }
+    },
+    "typography": {
+      "font_family": "Inter, ui-sans-serif, system-ui, -apple-system, sans-serif",
+      "page_greeting": "text-sm font-bold text-stone-800",
+      "page_subtitle": "text-[11px] text-stone-400 mt-0.5",
+      "section_label": "text-xs font-semibold uppercase tracking-widest text-stone-400",
+      "card_label": "text-[11px] font-medium text-stone-400 uppercase tracking-wide",
+      "body_sm": "text-sm",
+      "body_xs": "text-xs",
+      "caption": "text-[11px]",
+      "micro": "text-[10px]",
+      "metric": "text-2xl font-bold leading-none",
+      "row_title": "text-sm font-semibold text-stone-800 truncate",
+      "row_subtitle": "text-[11px] text-stone-400",
+      "feed_text": "text-xs text-stone-700 leading-snug"
+    },
+    "spacing": {
+      "app_shell": {
+        "sidebar_width": "w-52",
+        "topbar_height": "h-14",
+        "main_padding": "px-5 py-5",
+        "content_max_width": "max-w-screen-xl",
+        "section_stack_gap": "gap-4"
+      },
+      "cards": {
+        "default_padding": "p-4",
+        "compact_row_padding": "p-3",
+        "row_gap": "gap-3",
+        "card_internal_gap": "gap-2",
+        "grid_gap_small": "gap-3",
+        "grid_gap_default": "gap-4"
+      },
+      "controls": {
+        "sidebar_item": "px-3 py-2",
+        "primary_small_button": "px-3 py-1.5",
+        "quick_action": "px-3 py-2.5",
+        "chip": "px-2 py-0.5",
+        "icon_button": "w-8 h-8",
+        "row_action": "w-7 h-7"
+      }
+    },
+    "radius": {
+      "sidebar_brand_icon": "rounded-xl",
+      "sidebar_nav_item": "rounded-xl",
+      "card": "rounded-2xl",
+      "row": "rounded-xl",
+      "icon_tile": "rounded-lg or rounded-xl",
+      "button": "rounded-xl",
+      "chip": "rounded-full",
+      "avatar": "rounded-full",
+      "progress": "rounded-full"
+    },
+    "shadows": {
+      "card": "shadow-card",
+      "card_hover": "hover:shadow-card",
+      "brand": "shadow-brand",
+      "floating": "shadow-float",
+      "rules": [
+        "Use shadow-card on white cards.",
+        "Use shadow-brand only on active indigo navigation or brand icon.",
+        "Use hover shadows sparingly on rows/cards that are clickable.",
+        "Do not use default Tailwind shadow-lg unless matching an intentional floating layer."
+      ]
+    },
+    "motion": {
+      "default_transition": "transition-colors",
+      "compound_transition": "transition-all",
+      "hover_patterns": [
+        "hover:bg-stone-100 for neutral sidebar/settings controls",
+        "hover:bg-white hover:shadow-card for nested rows",
+        "hover:bg-indigo-50 for indigo outlined icon actions",
+        "hover:bg-indigo-100 for soft primary buttons",
+        "hover:brightness-95 for tinted quick-action tiles"
+      ],
+      "reveal_pattern": "Use opacity-0 group-hover:opacity-100 for secondary row actions."
+    }
+  },
+  "layout_system": {
+    "app_shell": {
+      "root": "flex h-screen bg-canvas font-sans overflow-hidden",
+      "structure": [
+        "Fixed left sidebar",
+        "Right content column",
+        "Fixed-height top bar",
+        "Scrollable main dashboard body"
+      ],
+      "main": "flex-1 overflow-y-auto scrollbar-thin px-5 py-5",
+      "content_wrapper": "max-w-screen-xl mx-auto flex flex-col gap-4"
+    },
+    "grid_patterns": {
+      "stats_row": "grid grid-cols-4 gap-3",
+      "primary_content_row": "grid grid-cols-3 gap-4; main panel spans col-span-2",
+      "secondary_content_row": "grid grid-cols-4 gap-4; large panels can span col-span-2",
+      "quick_actions": "grid grid-cols-2 gap-2",
+      "stacked_column": "flex flex-col gap-4"
+    },
+    "responsive_guidance": [
+      "The current implementation is desktop-first. When adding responsiveness, collapse 4-column grids to 2 columns on tablet and 1 column on mobile.",
+      "Keep cards and rows visually identical across breakpoints; only change grid columns and stacking.",
+      "Sidebar may become a top nav or drawer on mobile, but preserve the active indigo nav item style."
+    ]
+  },
+  "components": {
+    "Icon": {
+      "purpose": "Small inline SVG helper for filled utility icons.",
+      "base_class": "flex-shrink-0",
+      "svg_attributes": {
+        "viewBox": "0 0 24 24",
+        "fill": "currentColor",
+        "default_size": 16
+      },
+      "usage": "Keep icons simple, monochrome, and inherited from the surrounding text color. Use 11px to 16px icons in dense UI, 20px+ only for empty states or feature tiles."
+    },
+    "Card": {
+      "purpose": "Default white dashboard module.",
+      "base_class": "rounded-2xl border border-black/[0.05] bg-white shadow-card",
+      "common_extensions": [
+        "p-4",
+        "p-4 flex flex-col gap-2"
+      ],
+      "rules": [
+        "Use Card for stat blocks, lists, timelines, budget modules, quick actions, traveler lists, and activity feeds.",
+        "Nested content rows inside cards should usually use rounded-xl, subtle borders, and bg-stone-50/60.",
+        "Do not make cards pure transparent unless intentionally using the .glass utility."
+      ]
+    },
+    "SectionHeader": {
+      "purpose": "Compact uppercase card header with optional text action.",
+      "wrapper_class": "flex items-center justify-between mb-3",
+      "title_class": "text-xs font-semibold uppercase tracking-widest text-stone-400",
+      "action_class": "text-[11px] font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-0.5",
+      "usage": "Use in every card section. Actions should be short phrases such as View all, Manage, See all, or Full itinerary."
+    },
+    "Chip": {
+      "purpose": "Tiny semantic status pill.",
+      "base_class": "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold",
+      "statuses": {
+        "confirmed": "bg-emerald-100 text-emerald-700 border-emerald-200",
+        "active": "bg-emerald-100 text-emerald-700 border-emerald-200",
+        "pending": "bg-amber-50 text-amber-700 border-amber-200",
+        "open": "bg-blue-50 text-blue-700 border-blue-200",
+        "cancelled": "bg-pink-50 text-pink-700 border-pink-200"
+      },
+      "rules": [
+        "Use chips for statuses, never for primary actions.",
+        "Chip labels should be one or two words.",
+        "Pastel background must pair with darker semantic text."
+      ]
+    },
+    "Avatar": {
+      "purpose": "Initial-based circular avatar.",
+      "base_class": "rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 ring-2 ring-white",
+      "default_size": "w-7 h-7",
+      "small_size": "w-6 h-6",
+      "colors": [
+        "bg-violet-400",
+        "bg-sky-400",
+        "bg-pink-400",
+        "bg-amber-400",
+        "bg-emerald-400",
+        "bg-indigo-200"
+      ],
+      "avatar_stack_class": "flex -space-x-1.5",
+      "rules": [
+        "Use two-letter initials generated from names.",
+        "Use ring-2 ring-white when avatars overlap.",
+        "Keep avatars compact; dashboard avatars should be 24px to 28px."
+      ]
+    },
+    "ProgressBar": {
+      "purpose": "Thin progress meter for budgets, capacity, readiness, or completion.",
+      "track_class": "h-1.5 w-full rounded-full bg-stone-200 overflow-hidden",
+      "fill_class": "h-full rounded-full transition-all",
+      "fill_colors": [
+        "bg-indigo-400",
+        "bg-indigo-500",
+        "bg-violet-400",
+        "bg-sky-400",
+        "bg-amber-400",
+        "bg-pink-400"
+      ],
+      "rules": [
+        "Calculate percentage as Math.min(100, Math.round(value / max * 100)).",
+        "Use pink for over-budget or error thresholds.",
+        "Pair progress bars with a tiny numeric label when space allows."
+      ]
+    },
+    "Sidebar": {
+      "purpose": "Persistent left navigation and account area.",
+      "container_class": "w-52 shrink-0 flex flex-col h-full bg-white border-r border-black/[0.05] py-5 px-3 gap-1",
+      "brand_row_class": "flex items-center gap-2 px-2 mb-5",
+      "brand_icon_class": "w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-brand",
+      "brand_text_class": "text-sm font-bold text-stone-800 tracking-tight",
+      "nav_item_base": "flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors text-left w-full",
+      "nav_item_active": "bg-indigo-600 text-white shadow-brand",
+      "nav_item_inactive": "text-stone-500 hover:bg-stone-100 hover:text-stone-800",
+      "footer_class": "mt-auto border-t border-black/[0.05] pt-3",
+      "rules": [
+        "Active navigation must be solid indigo with white text and brand shadow.",
+        "Inactive navigation remains quiet gray and only gains a stone hover fill.",
+        "Keep sidebar width fixed at w-52 for desktop."
+      ]
+    },
+    "TopBar": {
+      "purpose": "Header for greeting, date/context, notifications, and main action.",
+      "container_class": "h-14 flex items-center justify-between px-6 bg-white border-b border-black/[0.05] shrink-0",
+      "title_class": "text-sm font-bold text-stone-800",
+      "subtitle_class": "text-[11px] text-stone-400 mt-0.5",
+      "icon_button_class": "relative w-8 h-8 rounded-xl border border-black/[0.07] bg-stone-50 flex items-center justify-center text-stone-400 hover:bg-stone-100 transition-colors",
+      "notification_dot_class": "absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-pink-500",
+      "new_trip_button_class": "flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors"
+    },
+    "StatCards": {
+      "purpose": "Four compact KPI cards at the top of the dashboard.",
+      "grid_class": "grid grid-cols-4 gap-3",
+      "card_class": "rounded-2xl border border-black/[0.05] bg-white shadow-card p-4",
+      "header_row_class": "flex items-start justify-between mb-3",
+      "label_class": "text-[11px] font-medium text-stone-400 uppercase tracking-wide",
+      "icon_tile_class": "w-7 h-7 rounded-lg flex items-center justify-center",
+      "value_class": "text-2xl font-bold leading-none mb-1",
+      "delta_class": "text-[11px] text-stone-400",
+      "recommended_colors": [
+        "text-indigo-600 bg-indigo-50",
+        "text-violet-600 bg-violet-50",
+        "text-sky-600 bg-sky-50",
+        "text-emerald-600 bg-emerald-50"
+      ]
+    },
+    "TripRow": {
+      "purpose": "Nested card row for upcoming trip summaries.",
+      "container_class": "flex items-center gap-3 p-3 rounded-xl border border-black/[0.04] bg-stone-50/60 hover:bg-white hover:shadow-card transition-all group",
+      "icon_tile_class": "w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0",
+      "title_class": "text-sm font-semibold text-stone-800 truncate",
+      "subtitle_class": "text-[11px] text-stone-400",
+      "progress_label_class": "text-[10px] text-stone-400 mt-0.5",
+      "avatar_stack_class": "flex -space-x-1.5 mr-1",
+      "row_action_class": "opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg border border-indigo-200 bg-white flex items-center justify-center text-indigo-500 hover:bg-indigo-50 transition-all",
+      "rules": [
+        "Use a nested soft row surface inside a white Card.",
+        "Show destination, status chip, dates, traveler count, progress, avatars, and a reveal action.",
+        "Keep row action hidden until hover to reduce visual noise."
+      ]
+    },
+    "Timeline": {
+      "purpose": "Vertical itinerary timeline with semantic dots and tiny metadata.",
+      "item_class": "flex gap-3",
+      "dot_base_class": "w-6 h-6 rounded-full flex items-center justify-center shrink-0 border-2",
+      "confirmed_dot": "bg-emerald-100 border-emerald-300 text-emerald-600",
+      "pending_dot": "bg-amber-50 border-amber-300 text-amber-600",
+      "open_dot": "bg-stone-100 border-stone-200 text-stone-400",
+      "line_class": "w-px flex-1 bg-stone-200 my-1",
+      "content_padding": "pb-3",
+      "title_class": "text-xs font-semibold text-stone-700",
+      "meta_class": "text-[10px] text-stone-400 mt-0.5",
+      "rules": [
+        "Use 24px circular dots with 11px icons.",
+        "Connect all items except the last with a 1px stone line.",
+        "Keep item labels short and metadata compact."
+      ]
+    },
+    "BudgetCard": {
+      "purpose": "Budget summary and category breakdown.",
+      "summary_class": "rounded-xl bg-indigo-50 border border-indigo-100 px-3 py-2.5 mb-3 flex items-center justify-between",
+      "summary_title_class": "text-xs font-semibold text-indigo-700",
+      "summary_meta_class": "text-[10px] text-indigo-400",
+      "items_stack_class": "flex flex-col gap-2.5",
+      "item_header_class": "flex items-center justify-between mb-1",
+      "item_label_wrapper_class": "flex items-center gap-1.5",
+      "legend_dot_class": "w-2 h-2 rounded-full",
+      "item_label_class": "text-xs text-stone-600",
+      "item_value_class": "text-xs font-semibold text-stone-700",
+      "item_total_class": "font-normal text-stone-400",
+      "overage_label_class": "ml-1 text-[10px] text-pink-600 font-semibold",
+      "rules": [
+        "Use an indigo-tinted summary pill at top.",
+        "Each line item gets a colored legend dot, value, total, and progress bar.",
+        "If spent exceeds total, use pink progress and an Over label."
+      ]
+    },
+    "QuickActions": {
+      "purpose": "Two-by-two grid of compact tinted action buttons.",
+      "grid_class": "grid grid-cols-2 gap-2",
+      "button_base_class": "flex items-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-medium hover:brightness-95 transition-all text-left",
+      "icon_tile_base_class": "w-6 h-6 rounded-lg border flex items-center justify-center shrink-0",
+      "variants": {
+        "indigo": "bg-indigo-50 text-indigo-600 border-indigo-100",
+        "violet": "bg-violet-50 text-violet-600 border-violet-100",
+        "sky": "bg-sky-50 text-sky-600 border-sky-100",
+        "amber": "bg-amber-50 text-amber-600 border-amber-100"
+      },
+      "rules": [
+        "Use short action labels, preferably two words.",
+        "Use a matching tinted icon tile inside the button.",
+        "Avoid solid primary buttons inside quick action grids unless one action is clearly dominant."
+      ]
+    },
+    "TravelersCard": {
+      "purpose": "Compact participant list with avatars, role metadata, and status chips.",
+      "row_class": "flex items-center gap-2.5 rounded-xl px-2.5 py-2 hover:bg-stone-50 transition-colors",
+      "name_class": "text-xs font-semibold text-stone-800 truncate",
+      "meta_class": "text-[10px] text-stone-400",
+      "rules": [
+        "Keep participant rows borderless and separated by padding/hover fill.",
+        "Use status chips at the far right.",
+        "Use 28px avatars for list identity."
+      ]
+    },
+    "ActivityFeed": {
+      "purpose": "Recent activity list with avatar, actor, action, and timestamp.",
+      "row_class": "flex items-start gap-2.5 py-2 border-b border-black/[0.04] last:border-0",
+      "avatar_size": "w-6 h-6",
+      "text_class": "text-xs text-stone-700 leading-snug",
+      "actor_class": "font-semibold",
+      "time_class": "text-[10px] text-stone-400 mt-0.5",
+      "alert_text_class": "text-amber-700",
+      "rules": [
+        "Use a bottom border between activity rows, removed from the final row.",
+        "Keep activity copy short and readable at 12px.",
+        "Use amber text for noteworthy automated alerts."
+      ]
+    }
+  },
+  "travel_domain_patterns": {
+    "trip_summary": {
+      "required_elements": [
+        "destination",
+        "date range",
+        "traveler count",
+        "status chip",
+        "budget or readiness progress",
+        "participant avatars",
+        "hover action"
+      ],
+      "preferred_container": "TripRow pattern inside a Card"
+    },
+    "itinerary_event": {
+      "required_elements": [
+        "time",
+        "short event title",
+        "supporting detail",
+        "status chip",
+        "semantic timeline dot"
+      ],
+      "preferred_container": "Timeline item pattern"
+    },
+    "budget_or_cost": {
+      "required_elements": [
+        "spent value",
+        "total value",
+        "percentage",
+        "progress bar",
+        "category color",
+        "overage state when needed"
+      ],
+      "preferred_container": "BudgetCard pattern"
+    },
+    "traveler_or_collaborator": {
+      "required_elements": [
+        "avatar initials",
+        "display name",
+        "role",
+        "trip count or metadata",
+        "status chip"
+      ],
+      "preferred_container": "TravelersCard row pattern"
+    }
+  },
+  "implementation_rules_for_ai": {
+    "when_creating_new_components": [
+      "Start with the Card primitive unless the UI is navigation, top bar, or an inline row.",
+      "Add SectionHeader for every major card.",
+      "Use existing Chip statuses before adding a new status.",
+      "Use ProgressBar for any numeric completion, capacity, budget, or readiness measure.",
+      "Use Avatar for people and avatar stacks for multiple participants.",
+      "Use Icon with currentColor instead of introducing multicolor icon sets.",
+      "Prefer grid/flex composition with gap-3 or gap-4 over custom margins.",
+      "Keep copy compact and scannable."
+    ],
+    "tailwind_class_preferences": [
+      "Use bg-canvas for the root background.",
+      "Use bg-white for cards and main panels.",
+      "Use border-black/[0.05] for card and shell borders.",
+      "Use rounded-2xl for cards, rounded-xl for rows/buttons, rounded-lg for small icon tiles.",
+      "Use shadow-card for cards and shadow-brand for active indigo elements.",
+      "Use text-stone-800 for primary text, text-stone-400 for muted metadata.",
+      "Use text-[10px], text-[11px], text-xs, text-sm, and text-2xl as the core type scale."
+    ],
+    "accessibility": [
+      "Icon-only buttons must include aria-labels when made functional.",
+      "Do not rely on color alone for status; include status text in chips.",
+      "Ensure interactive elements are at least 28px high in dense areas and preferably 32px.",
+      "Maintain visible hover and focus states for buttons and rows.",
+      "Keep semantic text colors dark enough on pastel backgrounds."
+    ],
+    "data_display": [
+      "Use cards and nested rows instead of raw tables for dashboard data.",
+      "Put the strongest value in colored bold text and supporting metadata in text-stone-400.",
+      "Align repeated values consistently across rows.",
+      "Use labels sparingly but consistently; section labels should be uppercase and tracked."
+    ]
+  },
+  "ready_to_copy_recipes": {
+    "default_card": "rounded-2xl border border-black/[0.05] bg-white shadow-card p-4",
+    "nested_row": "flex items-center gap-3 p-3 rounded-xl border border-black/[0.04] bg-stone-50/60 hover:bg-white hover:shadow-card transition-all",
+    "section_header": "flex items-center justify-between mb-3",
+    "section_title": "text-xs font-semibold uppercase tracking-widest text-stone-400",
+    "text_action": "text-[11px] font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-0.5",
+    "primary_nav_item": "flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium bg-indigo-600 text-white shadow-brand",
+    "inactive_nav_item": "flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-stone-500 hover:bg-stone-100 hover:text-stone-800 transition-colors",
+    "soft_primary_button": "flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors",
+    "icon_button": "w-8 h-8 rounded-xl border border-black/[0.07] bg-stone-50 flex items-center justify-center text-stone-400 hover:bg-stone-100 transition-colors",
+    "status_chip_base": "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold",
+    "confirmed_chip": "bg-emerald-100 text-emerald-700 border-emerald-200",
+    "pending_chip": "bg-amber-50 text-amber-700 border-amber-200",
+    "open_chip": "bg-blue-50 text-blue-700 border-blue-200",
+    "error_chip": "bg-pink-50 text-pink-700 border-pink-200",
+    "avatar": "w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 ring-2 ring-white",
+    "avatar_stack": "flex -space-x-1.5",
+    "progress_track": "h-1.5 w-full rounded-full bg-stone-200 overflow-hidden",
+    "progress_fill": "h-full rounded-full transition-all",
+    "quick_action_button": "flex items-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-medium hover:brightness-95 transition-all text-left"
+  },
+  "quality_checklist": [
+    "Does the new UI sit on bg-canvas or inside an existing white card?",
+    "Does it use rounded-2xl cards and rounded-xl rows/buttons?",
+    "Are text sizes compact and consistent with the existing dashboard?",
+    "Are primary actions indigo/violet and semantic states pastel?",
+    "Are shadows limited to shadow-card, shadow-brand, or a clearly justified floating shadow?",
+    "Does every card have a concise section label or clear title?",
+    "Are rows scannable with icon/avatar, primary text, metadata, status/value, and optional action?",
+    "Are hover states subtle and consistent?",
+    "Would the new feature look native beside the existing stat cards, trip rows, timeline, budget card, quick actions, travelers, and activity feed?"
+  ]
+}

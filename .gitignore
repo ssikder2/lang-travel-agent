@@ -3,3 +3,9 @@
 __pycache__/
 *.pyc
 .venv/
+.wayfarer_memory.db
+.wayfarer_memory.db-journal
+.wayfarer_memory.db-wal
+.wayfarer_memory.db-shm
+.wayfarer_profiles.json
+.specstory/

@@ -1,0 +1,12 @@
+.env
+.env.*
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.specstory/
+.wayfarer_memory.db*
+.wayfarer_profiles.json
+ui/node_modules/
+ui/.next/
+ui/*.tsbuildinfo
