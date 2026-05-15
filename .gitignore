@@ -9,3 +9,4 @@ __pycache__/
 .wayfarer_memory.db-shm
 .wayfarer_profiles.json
 .specstory/
+.specstory/**
