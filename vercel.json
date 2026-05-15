@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "installCommand": "npm --prefix ui ci",
+  "installCommand": "npm install --no-package-lock --ignore-scripts && npm --prefix ui ci",
   "buildCommand": "npm --prefix ui run build",
   "outputDirectory": "ui/.next"
 }
