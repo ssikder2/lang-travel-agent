@@ -1,6 +1,7 @@
 import json
 import os
 import re
+from contextlib import asynccontextmanager
 from datetime import date, timedelta
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,10 +17,49 @@ from langchain_core.messages import (
 from langchain.chat_models import init_chat_model
 from langgraph.prebuilt import create_react_agent
 
-from main import model, tools, checkpointer, SYSTEM_PROMPT
+os.environ.setdefault("WAYFARER_DISABLE_SYNC_SQLITE", "1")
+
+from main import model, tools, SYSTEM_PROMPT
 from tools.profile import format_profile, get_profile, reset_profile, set_session
 
-app = FastAPI(title="Wayfarer Travel Agent API")
+chat_agent = None
+_checkpointer_context = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Create an async-compatible LangGraph checkpointer for the FastAPI server."""
+    global chat_agent, _checkpointer_context
+
+    try:
+        from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+
+        memory_db_path = os.path.join(os.path.dirname(__file__), ".wayfarer_memory.db")
+        _checkpointer_context = AsyncSqliteSaver.from_conn_string(memory_db_path)
+        server_checkpointer = await _checkpointer_context.__aenter__()
+        await server_checkpointer.setup()
+    except (ImportError, ModuleNotFoundError):
+        from langgraph.checkpoint.memory import MemorySaver
+
+        server_checkpointer = MemorySaver()
+
+    chat_agent = create_react_agent(
+        model,
+        tools=tools,
+        checkpointer=server_checkpointer,
+        prompt=make_chat_prompt,
+    )
+
+    try:
+        yield
+    finally:
+        chat_agent = None
+        if _checkpointer_context is not None:
+            await _checkpointer_context.__aexit__(None, None, None)
+            _checkpointer_context = None
+
+
+app = FastAPI(title="Wayfarer Travel Agent API", lifespan=lifespan)
 
 # Build origin allowlist from env + sensible defaults.
 # ALLOWED_ORIGINS can be a comma-separated list of extra origins
@@ -471,13 +511,6 @@ def make_chat_prompt(state):
     ]
 
 
-chat_agent = create_react_agent(
-    model,
-    tools=tools,
-    checkpointer=checkpointer,
-    prompt=make_chat_prompt,
-)
-
 # ---------------------------------------------------------------------------
 # Cards extractor
 # ---------------------------------------------------------------------------
@@ -514,6 +547,12 @@ def sse(payload: dict) -> str:
 
 @app.post("/api/chat")
 async def chat(request: ChatRequest):
+    if chat_agent is None:
+        return StreamingResponse(
+            iter([sse({"type": "error", "message": "Chat agent is still starting up."})]),
+            media_type="text/event-stream",
+        )
+
     set_session(request.session_id)
     config = {"configurable": {"thread_id": request.session_id}}
 

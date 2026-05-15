@@ -186,18 +186,23 @@ tools = [
 
 model = init_chat_model("openai:gpt-5.4")
 
-# Use SQLite for persistence when the package is available (survives reloads).
-# Falls back to in-memory if langgraph-checkpoint-sqlite is not installed.
-try:
-    import sqlite3
-    from langgraph.checkpoint.sqlite import SqliteSaver
-    _MEMORY_DB_PATH = os.path.join(os.path.dirname(__file__), ".wayfarer_memory.db")
-    _memory_conn = sqlite3.connect(_MEMORY_DB_PATH, check_same_thread=False)
-    checkpointer = SqliteSaver(_memory_conn)
-    checkpointer.setup()
-except (ImportError, ModuleNotFoundError):
+# Use SQLite for CLI persistence when the package is available (survives reloads).
+# The FastAPI server sets WAYFARER_DISABLE_SYNC_SQLITE because async routes need
+# an async-compatible checkpointer, which is created in server.py.
+if os.getenv("WAYFARER_DISABLE_SYNC_SQLITE") == "1":
     from langgraph.checkpoint.memory import MemorySaver
     checkpointer = MemorySaver()
+else:
+    try:
+        import sqlite3
+        from langgraph.checkpoint.sqlite import SqliteSaver
+        _MEMORY_DB_PATH = os.path.join(os.path.dirname(__file__), ".wayfarer_memory.db")
+        _memory_conn = sqlite3.connect(_MEMORY_DB_PATH, check_same_thread=False)
+        checkpointer = SqliteSaver(_memory_conn)
+        checkpointer.setup()
+    except (ImportError, ModuleNotFoundError):
+        from langgraph.checkpoint.memory import MemorySaver
+        checkpointer = MemorySaver()
 
 
 def make_prompt(base_prompt: str):
